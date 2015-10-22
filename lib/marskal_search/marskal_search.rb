@@ -110,7 +110,7 @@ class MarskalSearch
                       { op: "nn", newop: 'IS NOT NULL',  mask: nil }
   ]
 
-  MANUAL_SQL_SHORT_CODES = ['<', '>', '!=', '=', '>=', '<=', '::', '!::',  '%', '!%','~', '!~']
+  MANUAL_SQL_SHORT_CODES = ['<', '>', '!=', '=', '>=', '<=', '::', '!::',  '%', '!%','~', '!~', '^', '!^']
 
 
   #these are the available options
@@ -641,9 +641,11 @@ class MarskalSearch
       idx = p_val.index(' ')
       unless idx.nil? || idx >= p_val.length
         l_val = "'#{p_val[idx+1..p_val.length]}'"
-        l_op = p_val.split.first.sub('!%', 'NOT LIKE').sub('%', 'LIKE').sub('!::', 'NOT BETWEEN').sub('::', 'BETWEEN').sub("!~", "NOT CONTAINS").sub("~", "CONTAINS")
+        l_op = p_val.split.first.sub('!%', 'NOT LIKE').sub('%', 'LIKE').sub("!^", 'NOT IN').sub("^", 'IN').sub('!::', 'NOT BETWEEN').sub('::', 'BETWEEN').sub("!~", "NOT CONTAINS").sub("~", "CONTAINS")
         if l_op == 'BETWEEN'
           l_val.gsub!('&&', "' AND '")
+        elsif l_op.include?("IN")
+          l_val = "( #{l_val.gsub(',', "','")} )".gsub(",''", '')   #buil;d in list and then clean out any empty strings
         elsif l_op.include?("CONTAINS")
           l_op.sub!('CONTAINS', 'LIKE')
           l_val = "'%#{p_val[idx+1..p_val.length]}%'"
@@ -651,6 +653,7 @@ class MarskalSearch
       end
       l_found = true
     end
+    puts "==> #{l_op}, #{l_val}, #{l_found}"
     return l_op, l_val, l_found
   end
 
