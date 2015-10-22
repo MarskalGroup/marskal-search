@@ -14,7 +14,7 @@ This search gem can output data in 3 formats:
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'marskal_search'
+gem 'marskal-search'
 ```
 
 And then execute:
@@ -23,7 +23,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install marskal_search
+    $ gem install marskal-search
 
 ## Usage
 
@@ -50,6 +50,7 @@ To get a list of available shortcuts for jqgrid and datable filters
 ```ruby
 rake marskal_search:shortcuts
 ```
+Note: A list of shortcuts is also available in this repository at [supplimental_documentation/SHORTCUTS.md](supplimental_documentation/SHORTCUTS.md)
 
 ## Development
 

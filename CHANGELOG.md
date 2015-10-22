@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.1.4 [`2015-10-22 by MAU`]
+* Fixed/cleaned up some [README.md](README.md) issues
+* Removed completed items from [TODO.md](supplimental_documentation/TODO.md)
+
+---
 ###### v0.1.3 [`2015-10-21 by MAU`]
 * Fixed problem where IN was overtaking CONTAINS filters..beacuse "IN" is part of the word contaINs
 
