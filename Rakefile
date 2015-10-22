@@ -5,4 +5,5 @@ RSpec::Core::RakeTask.new(:spec)
 
 task :default => :spec
 
-import "./lib/tasks/downloader.rake"
+import "./lib/tasks/filter_shortcuts.rake"
+

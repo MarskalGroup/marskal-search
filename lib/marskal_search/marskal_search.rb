@@ -110,7 +110,7 @@ class MarskalSearch
                       { op: "nn", newop: 'IS NOT NULL',  mask: nil }
   ]
 
-  MANUAL_SQL_SHORT_CODES = ['<', '>', '!=', '=', '>=', '<=', '::', '!::',  '%', '!%']
+  MANUAL_SQL_SHORT_CODES = ['<', '>', '!=', '=', '>=', '<=', '::', '!::',  '%', '!%','~', '!~']
 
 
   #these are the available options
@@ -550,7 +550,7 @@ class MarskalSearch
 
       l_where += ' AND ' unless l_where.blank?   #append existing query
 
-      if l_col_hash[:operator].blank?                               #if no operator is given, then the default will be used
+      if l_col_hash[:operator].blank?                           #if no operator is given, then the default will be used
         l_condition = "LIKE '%#{l_col_hash[:value]}%' "          #we assume this is a LIKE %searchtext% query
       else
         l_condition = "#{l_col_hash[:operator]} #{l_col_hash[:value]}" #otherwise, just use what the user passed to us
@@ -641,9 +641,12 @@ class MarskalSearch
       idx = p_val.index(' ')
       unless idx.nil? || idx >= p_val.length
         l_val = "'#{p_val[idx+1..p_val.length]}'"
-        l_op = p_val.split.first.sub('!%', 'NOT LIKE').sub('%', 'LIKE').sub('!::', 'NOT BETWEEN').sub('::', 'BETWEEN')
+        l_op = p_val.split.first.sub('!%', 'NOT LIKE').sub('%', 'LIKE').sub('!::', 'NOT BETWEEN').sub('::', 'BETWEEN').sub("!~", "NOT CONTAINS").sub("~", "CONTAINS")
         if l_op == 'BETWEEN'
           l_val.gsub!('&&', "' AND '")
+        elsif l_op.include?("CONTAINS")
+          l_op.sub!('CONTAINS', 'LIKE')
+          l_val = "'%#{p_val[idx+1..p_val.length]}%'"
         end
       end
       l_found = true

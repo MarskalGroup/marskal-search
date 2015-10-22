@@ -1,3 +1,4 @@
+
 namespace :marskal_search do
 
   desc 'Display Column Filter ShortCuts'
@@ -23,7 +24,7 @@ namespace :marskal_search do
       elsif line[0..6].downcase == "back to"
         next
       else
-        puts line.gsub("\n", '')
+        puts line.gsub(/[\n`]/, '')
       end
       dashed_line_length = [dashed_line_length, line.length].max if line.strip.length > 0
 
