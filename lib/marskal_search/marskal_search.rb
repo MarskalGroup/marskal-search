@@ -644,11 +644,11 @@ class MarskalSearch
         l_op = p_val.split.first.sub('!%', 'NOT LIKE').sub('%', 'LIKE').sub("!^", 'NOT IN').sub("^", 'IN').sub('!::', 'NOT BETWEEN').sub('::', 'BETWEEN').sub("!~", "NOT CONTAINS").sub("~", "CONTAINS")
         if l_op == 'BETWEEN'
           l_val.gsub!('&&', "' AND '")
-        elsif l_op.include?("IN")
-          l_val = "( #{l_val.gsub(',', "','")} )".gsub(",''", '')   #buil;d in list and then clean out any empty strings
         elsif l_op.include?("CONTAINS")
           l_op.sub!('CONTAINS', 'LIKE')
           l_val = "'%#{p_val[idx+1..p_val.length]}%'"
+        elsif l_op.include?("IN")
+          l_val = "( #{l_val.gsub(',', "','")} )".gsub(",''", '')   #buil;d in list and then clean out any empty strings
         end
       end
       l_found = true

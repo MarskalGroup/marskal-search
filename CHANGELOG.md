@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.1.3 [`2015-10-21 by MAU`]
+* Fixed problem where IN was overtaking CONTAINS filters..beacuse "IN" is part of the word contaINs
+
+---
 ###### v0.1.2 [`2015-10-21 by MAU`]
 * Added IN/NOT IN short codes `^` and `!^`
 
