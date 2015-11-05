@@ -672,4 +672,14 @@ class MarskalSearch
     (self.count / self.limit).to_i + 1
   end
 
+  def self.append_sql_where_if_true(p_where, p_condition, p_sql_to_append )
+    p_condition = false if p_condition.nil?
+    if p_condition
+      return p_where + (p_where.blank? ? '' : ' AND ') + p_sql_to_append
+    else
+      return p_where
+    end
+  end
+
+
 end

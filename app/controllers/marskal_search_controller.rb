@@ -20,7 +20,7 @@ class MarskalSearchController < ApplicationController
     marskal_params[:order_string] =   sort_order_hack(params, marskal_params)
 
     marskal_params[:default_where] =  marskal_params['default_where'].to_s
-    marskal_params[:where_string] =  ApplicationHelper.append_sql_where_if_true(marskal_params['where_string'].to_s, 'AND', marskal_params['starting_filter'].to_s )
+    marskal_params[:where_string] =  MarskalSearch.append_sql_where_if_true(marskal_params['where_string'].to_s, 'AND', marskal_params['starting_filter'].to_s )
 
     #this is for a single field search among all columns or table...this has not been implemented in jqgrid yet
     marskal_params[:search_text] =''  # params[:search_text] Just leave blank for now

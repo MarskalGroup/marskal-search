@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.1.5 [`2015-11-04 by MAU`]
+* Fixed A Missing Function Call
+* Removed a console.log line from js file
+
+---
 ###### v0.1.4 [`2015-10-22 by MAU`]
 * Fixed/cleaned up some [README.md](README.md) issues
 * Removed completed items from [TODO.md](supplimental_documentation/TODO.md)

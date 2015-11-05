@@ -19,7 +19,7 @@ function isManualSqlFilter(p_value) {
     var betweens = ['::', '!::'];
     var ins = ['^', '!^'];
     var l_found = false;
-console.log('in isManualSqlFilter');
+//console.log('in isManualSqlFilter');
     if (betweens.indexOf(p_value.split(' ')[0])  >= 0) {
         var l_range = p_value.split('&&');              //the && seperates the range values in the between
         l_found = (l_range.length <= 1 || l_range[1]=='');      //if the have not completed the range, then we set found to false to prevent calling program from executing search
