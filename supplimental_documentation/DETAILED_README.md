@@ -129,6 +129,7 @@ def testme
     m.results                     #execute query and return the results into an array of ActiveRecord Objects
     m.results(format: :jqgrid)    #execute query and return the results into a jqgrid friendly format  
     m.results(format: :datatables) #execute query and return the results into a juery datables friendly format  
+    m.results(format: :marskal-api) #execute query and return the results into a marksal-api friendly output
     m.pluck                       #execute query, but return the selected fields in a two dimensional array, just the values, not field names
     m.complete_where_clause       #just show me only the resulting qhere cluase based on current settings, (nothing is executed, display only)
     m.combine_joins               #show me the details of how the joins and includes options will be processed  (nothing is executed, display only)

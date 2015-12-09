@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.2.0 [`2015-12-09 by MAU`]
+* Added Integration with marskal-api
+* tweaked handling of pass_back option
+
+---
 ###### v0.1.5 [`2015-11-04 by MAU`]
 * Fixed A Missing Function Call
 * Removed a console.log line from js file

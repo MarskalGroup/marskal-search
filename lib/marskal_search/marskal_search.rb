@@ -91,6 +91,7 @@ class MarskalSearch
   EXCLUDE_SEARCHABLE_COLUMN_DATATYPES = [:boolean]                    # exclude boolean fields from the text searches
   DATATABLES = :datatables
   JQGRID = :jqgrid
+  MARSKAL_API = :marksal_api
 
   JQGRID_OPERATORS  =[{ op: "eq", newop: '=',         mask: '' },
                       { op: "ne", newop: '!=',        mask: '' },
@@ -163,7 +164,7 @@ class MarskalSearch
     @limit = options[:limit]
 
     #other parameters
-    @pass_back  = options[:pass_back]||{}  #simply stores a hash that will be passed back as is..no changes
+    @pass_back  =  options.has_key?(:pass_back) ? options[:pass_back] : nil #simply stores a hash that will be passed back as is..no changes
 
     @klass = p_class.is_a?(String) ? (eval p_class.classify) : p_class  #if string convert to a class
 
@@ -368,16 +369,22 @@ class MarskalSearch
     l_relation = active_record_relation
     p_options.assert_valid_keys :format             #allow only legit options
 
-
     #now execute and return data in requested format
     if p_options[:format] == DATATABLES
-      l_results = { recordsTotal:  count_all, recordsFiltered: count, data: pluck }.merge(@pass_back)
+      l_results = { recordsTotal:  count_all, recordsFiltered: count, data: pluck }.merge(@pass_back || {})
     elsif p_options[:format] == JQGRID
-      l_results = { total:  calc_page(), records: count, rows: pluck_with_names }.merge(@pass_back)
+      l_results = { total:  calc_page(), records: count, rows: pluck_with_names }.merge(@pass_back || {})
+    elsif p_options[:format] == MARSKAL_API
+      l_results = attach_pass_back( { rows: pluck_with_names } )
     else
-      l_results = l_relation.to_a
+      l_results = attach_pass_back({ rows: l_relation.to_a} )
     end
     return l_results
+  end
+
+  def attach_pass_back(p_results)
+    p_results.merge!({ pass_back: @pass_back }) unless @pass_back.nil?
+    p_results
   end
 
   #display only: completed where clause
