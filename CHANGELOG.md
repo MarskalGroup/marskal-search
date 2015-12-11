@@ -1,6 +1,18 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.2.1 [`2015-12-10 by MAU`]
+* Many Bug Fixes and changes to accommodate marskal-api
+* Bug Fixes
+    * Added COLUMN_DELIMTER or ` to wrap column names to prevent myssql erros. This was discoverd because 'primary' is a mysaql reserved word and also a field ion the database
+    * fixed the way total pages are calculated
+    * spelled :marskal-api correctly   
+    * fixed problem with single column searches truncating the returned value from DB                   
+* Marskal-api Integration
+    * Added page to paramaters as an alternative to offset
+    * Enhanced the return has results for marskal and default
+        * Now Includes total page counts, page number and more
+---
 ###### v0.2.0 [`2015-12-09 by MAU`]
 * Added Integration with marskal-api
 * tweaked handling of pass_back option

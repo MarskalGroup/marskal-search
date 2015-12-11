@@ -82,16 +82,22 @@
 #   :limit ==>       The maximum number of records to get..regardless of the amount of records that would be returned
 #                     limit: 50  (retrive no more than 50 records)
 #                     default:  no limit, all records are retrieved
+#   :page ==>         The page number to go to. NOTE: IF offset and page are both provided, the page parameter is ignored
+#                     if there are greater than max  pages, then the last page will be used
+#                     page: 5  (goto page 5)
+#                     default:  no limit, all records are retrieved
+#   :pass_back ==>    when results are requested this hash is simply passed back to the calling program as is, no changes
 #   IMPORTANT NOTE:   :offset and :limit have not effect on the count and count_filtered methods, these methods will consider the entire data set
 
 class MarskalSearch
+  COLUMN_WRAPPER_CHAR = "`"
   MAX_LIMIT = 18446744073709551615                                    #mysql max to be used when an offset is given with no limit
   EXCLUDE_SEARCHABLE_COLUMN_LIST = ['id','created_at', 'updated_at']  #by default eliminate these as 'searchable' columns
   EXCLUDE_SEARCHABLE_COLUMN_ENDING_IN = '_id'                         # also fields like , user_id, contact_id
   EXCLUDE_SEARCHABLE_COLUMN_DATATYPES = [:boolean]                    # exclude boolean fields from the text searches
   DATATABLES = :datatables
   JQGRID = :jqgrid
-  MARSKAL_API = :marksal_api
+  MARSKAL_API = :marskal_api
 
   JQGRID_OPERATORS  =[{ op: "eq", newop: '=',         mask: '' },
                       { op: "ne", newop: '!=',        mask: '' },
@@ -116,7 +122,7 @@ class MarskalSearch
 
   #these are the available options
   VARIABLES = <<-eos
-               :select_columns, 
+               :select_columns,
                :not_distinct,
                :joins, :includes_for_select_and_search, :includes_for_search_only,
                :default_where, :where_string, :search_only_these_data_types,
@@ -124,7 +130,8 @@ class MarskalSearch
                :search_only_these_fields, :do_not_search_these_fields,
                :ignore_default_search_field_exclusions,  :case_sensitive,
                :order_string,
-               :offset, :limit, :pass_back
+               :offset, :limit, :page,
+               :pass_back
   eos
 
   eval "attr_accessor  #{VARIABLES}"
@@ -136,8 +143,11 @@ class MarskalSearch
   def initialize(p_class, p_search_text, options = {})
     eval "options.assert_valid_keys(#{VARIABLES})"          #only allow legit options
 
+    @klass = p_class.is_a?(String) ? (eval p_class.classify) : p_class  #if string convert to a class
+
+
     #Select parameters
-    self.select_columns = options[:select_columns]
+    self.select_columns = (options[:select_columns]||[]).empty? ? @klass.column_names : options[:select_columns]
     @not_distinct =  @not_distinct||false
 
     #joins and include parameters
@@ -158,15 +168,19 @@ class MarskalSearch
 
     #order parameters
     @order_string = options[:order_string]|| ''
+    @limit = options[:limit]
 
     #sql retrieval parameters
-    @offset = options[:offset]
-    @limit = options[:limit]
+    if options[:offset].nil?
+      @offset = options[:page].nil? ? options[:offset] : ((options[:page].to_i * @limit) - @limit)
+    else
+      @offset = options[:offset]
+    end
+
 
     #other parameters
     @pass_back  =  options.has_key?(:pass_back) ? options[:pass_back] : nil #simply stores a hash that will be passed back as is..no changes
 
-    @klass = p_class.is_a?(String) ? (eval p_class.classify) : p_class  #if string convert to a class
 
   end
 
@@ -178,15 +192,16 @@ class MarskalSearch
   def select_columns=(p_columns)
     @select_columns = Array(p_columns)
   end
+
   def select_string(p_prepare_for_count = false)
     l_select_string = ''
     unless @select_columns.blank?
       #ran into an issue with counting matching the actual result set...when you do a count, null values are not considered, so
       #to ensure we consider all fields, we apply an IFNULL(field, '') to get around this problem mau 10/2014
       if p_prepare_for_count
-        l_select_string = @select_columns.sql_null_to_blank.to_string_no_brackets_or_quotes
+        l_select_string = wrap_columns(@select_columns).sql_null_to_blank.to_string_no_brackets_or_quotes
       else
-        l_select_string = @select_columns.to_string_no_brackets_or_quotes
+        l_select_string = wrap_columns(@select_columns).to_string_no_brackets_or_quotes
       end
     end
     l_select_string  #return resulting string
@@ -351,12 +366,12 @@ class MarskalSearch
 
   #do an active record 'pluck'
   def pluck_with_names
-    l_records = active_record_relation.pluck(select_string)
+    l_records = select_string.blank? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
     l_data = []
     l_records.each do |l_record|
       l_hash = {}
       @select_columns.each_with_index do |l_column, index|
-        l_hash[l_column.to_sym]  = l_record[index]
+        l_hash[l_column.to_sym]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
       end
       l_data << l_hash
     end
@@ -373,13 +388,31 @@ class MarskalSearch
     if p_options[:format] == DATATABLES
       l_results = { recordsTotal:  count_all, recordsFiltered: count, data: pluck }.merge(@pass_back || {})
     elsif p_options[:format] == JQGRID
-      l_results = { total:  calc_page(), records: count, rows: pluck_with_names }.merge(@pass_back || {})
+      l_results = { total:  calc_pages(), records: count, rows: pluck_with_names }.merge(@pass_back || {})
     elsif p_options[:format] == MARSKAL_API
-      l_results = attach_pass_back( { rows: pluck_with_names } )
+      l_results = full_page_vars(pluck_with_names)
     else
-      l_results = attach_pass_back({ rows: l_relation.to_a} )
+      l_results = full_page_vars(l_relation.to_a)
     end
     return l_results
+  end
+
+  def full_page_vars(p_rows)
+    l_result = {  unfilteredRowCount: count_all,
+                  filteredCount: count
+    }
+    l_result[:pageTotal] = calc_pages(l_result[:filteredCount])
+    l_result[:limit] = self.limit  unless self.limit.nil?
+
+    if  !p_rows.empty?  && (l_result[:offset].to_i < l_result[:filteredCount])
+      l_result[:offset] = self.offset unless self.offset.nil?
+      l_result[:currentPage] = calc_current_page(l_result[:filteredCount])
+    end
+
+    l_result[:pass_back] = @pass_back unless @pass_back.nil?
+    l_result[:rows] = p_rows
+
+    l_result
   end
 
   def attach_pass_back(p_results)
@@ -675,9 +708,23 @@ class MarskalSearch
     p_col.downcase == 'cb' || p_col.downcase.include?("nodb_")
   end
 
-  def calc_page()
-    (self.count / self.limit).to_i + 1
+  def calc_pages(p_count = self.count)
+    #if no limit was set, then it has to be pages 1
+    if self.limit.nil?
+      l_pages = 1
+    else
+      l_extra_page = ((p_count % self.limit)) == 0 ? 0 : 1  #if we have an exact count dont add page, other wise add one more page
+      l_pages = (p_count / self.limit).to_i + l_extra_page
+    end
+    l_pages
   end
+
+  def calc_current_page(p_total_pages = calc_pages())
+    #if offset == 0, then it has to be pages 1
+    (self.offset.to_i == 0) ? 1 : (self.offset/self.limit).to_i + 1
+  end
+
+
 
   def self.append_sql_where_if_true(p_where, p_condition, p_sql_to_append )
     p_condition = false if p_condition.nil?
@@ -686,6 +733,11 @@ class MarskalSearch
     else
       return p_where
     end
+  end
+
+  def wrap_columns(p_columns)
+    p_columns.map {|p_column| "#{COLUMN_WRAPPER_CHAR}#{p_column}#{COLUMN_WRAPPER_CHAR}"}
+
   end
 
 
