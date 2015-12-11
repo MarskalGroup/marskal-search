@@ -1,6 +1,9 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.2.2 [`2015-12-11 by MAU`]
+* Added a concat for queries
+---
 ###### v0.2.1 [`2015-12-10 by MAU`]
 * Many Bug Fixes and changes to accommodate marskal-api
 * Bug Fixes

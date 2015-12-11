@@ -725,6 +725,18 @@ class MarskalSearch
   end
 
 
+  #concatenate a bunch of queries together sepearted by AND
+  def self.concat_query( *args )
+    l_args_not_empty = args.delete_if {|x| x.blank?}
+
+    return l_args_not_empty.first unless l_args_not_empty.length > 1  #if only one string, just return it
+
+    l_query = ""
+    l_args_not_empty.each do |l_append_query|
+      l_query = self.append_sql_where_if_true(l_query, true, "( #{l_append_query} )" )
+    end
+    l_query
+  end
 
   def self.append_sql_where_if_true(p_where, p_condition, p_sql_to_append )
     p_condition = false if p_condition.nil?
