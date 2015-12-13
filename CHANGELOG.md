@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.2.3 [`2015-12-13 by MAU`]
+* started beginning of transition options || to options.has_key?
+* add some tuning for unfiltered counts and regular counts as well
+
+---
 ###### v0.2.2 [`2015-12-11 by MAU`]
 * Added a concat for queries
 ---

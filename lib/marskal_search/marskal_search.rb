@@ -148,7 +148,7 @@ class MarskalSearch
 
     #Select parameters
     self.select_columns = (options[:select_columns]||[]).empty? ? @klass.column_names : options[:select_columns]
-    @not_distinct =  @not_distinct||false
+    @not_distinct =  options.has_key?(:not_distinct)
 
     #joins and include parameters
     self.joins = options[:joins]
@@ -198,7 +198,9 @@ class MarskalSearch
     unless @select_columns.blank?
       #ran into an issue with counting matching the actual result set...when you do a count, null values are not considered, so
       #to ensure we consider all fields, we apply an IFNULL(field, '') to get around this problem mau 10/2014
-      if p_prepare_for_count
+      if p_prepare_for_count && @not_distinct
+        l_select_string = '*'
+      elsif p_prepare_for_count
         l_select_string = wrap_columns(@select_columns).sql_null_to_blank.to_string_no_brackets_or_quotes
       else
         l_select_string = wrap_columns(@select_columns).to_string_no_brackets_or_quotes
@@ -340,6 +342,11 @@ class MarskalSearch
     active_record_relation.to_sql
   end
 
+  #retyurn tru if there is a where clause and it has vales
+  def has_where?
+    !complete_where_clause().blank?
+  end
+
   #count completed unfiltered, no where_string, no search_text
   #IMPORTANT_NOTE: The default scope will NEVER be excluded for counting purposes. It is essentially a fixed part of the query
   #this is useful, when the entire set is actually just a subset of the overall data set
@@ -398,9 +405,12 @@ class MarskalSearch
   end
 
   def full_page_vars(p_rows)
-    l_result = {  unfilteredRowCount: count_all,
+    l_result = {
                   filteredCount: count
     }
+
+    l_result[:unfilteredRowCount] =  has_where? ? count_all() :  l_result[:filteredCount]
+
     l_result[:pageTotal] = calc_pages(l_result[:filteredCount])
     l_result[:limit] = self.limit  unless self.limit.nil?
 
