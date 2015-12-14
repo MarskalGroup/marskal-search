@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.2.4 [`2015-12-14 by MAU`]
+* snapshot before major cleanup for marksla api and search tools
+
+---
 ###### v0.2.3 [`2015-12-13 by MAU`]
 * started beginning of transition options || to options.has_key?
 * add some tuning for unfiltered counts and regular counts as well
