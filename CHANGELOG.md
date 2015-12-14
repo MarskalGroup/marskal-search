@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.0 [`2015-12-14 by MAU`]
+* starting rewrite of methods and adding help
+* this is only a semi-working version
+
+---
 ###### v0.2.4 [`2015-12-14 by MAU`]
 * snapshot before major cleanup for marksla api and search tools
 
