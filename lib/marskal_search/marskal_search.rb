@@ -1,16 +1,18 @@
 #Call MarskalSearch
 #Used to search for a string through tables and sub tables and return the results
 #Can be used as an enhancement to ActiveRecord. Was originall developed to support the jquery plugins datatables and jqgrid, but can be used with out them
-#Usage MarskalSearch.new (p_class, p_search_text, options)
+#Usage MarskalSearch.new (p_class, options)
 # p_class:  ActiveRecord Model
 #           examples: User  Contact Book
-# p_search: String to search for
-#            examples: "admin"  "williams" "poe"
 #
 # options:
 #   **NOTE because of complicated queries, always include the table name with the field name for all parameters that allow fields.
 #          for example pass 'contacts.last_name' instead of just 'last_name'
 #          Also: this has only been tested for Mysql
+#   :search_text: String to search for
+#                     **ex:  "admin"  "williams" "poe" "whatever"
+#                     **joined table example: "['contacts.last_name', 'contacts.first_name', 'contact_phone_numbers.phone_number']"
+#                     default: If blank, "" is used and no search will be done using this parameter
 #   :select_columns => A List of columns to be selected
 #                     **ex:  "['contacts.last_name', 'contacts.first_name']"
 #                     **joined table example: "['contacts.last_name', 'contacts.first_name', 'contact_phone_numbers.phone_number']"
@@ -102,9 +104,9 @@ class MarskalSearch
 
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
-  attr_accessor  :search_text
+  # attr_accessor  :search_text
   attr_reader  :klass
-
+  attr_reader  :q
 
 
   def symbol_to_hash(p_symbol)
@@ -116,7 +118,7 @@ class MarskalSearch
 
 
   #intialize class
-  def initialize(p_class, p_search_text, options = {})
+  def initialize(p_class, options = {})
     eval "options.assert_valid_keys(#{VARIABLES})"          #only allow legit options
 
     @klass = p_class.is_a?(String) ? (eval p_class.classify) : p_class  #if string convert to a class
@@ -134,7 +136,6 @@ class MarskalSearch
     #where parameters
     @default_where = options[:default_where]|| ''
     @where_string = options[:where_string]|| ''
-    @search_text = p_search_text||''
     self.individual_column_filters = options[:individual_column_filters]
     self.search_only_these_fields = options[:search_only_these_fields]
     self.do_not_search_these_fields = options[:do_not_search_these_fields]
@@ -158,7 +159,19 @@ class MarskalSearch
     @pass_back  =  options.has_key?(:pass_back) ? options[:pass_back] : nil #simply stores a hash that will be passed back as is..no changes
 
     set_wrap_column(options[:wrap_column]||:default)
+    set_search_text(options[:search_text]||options[:q])
 
+
+  end
+
+  #lookup fullkey from short cut reference
+  def short_cut_to_option(p_shortcut)
+    l_symbol = nil
+    VALID_KEYS.each do |key, values|
+      l_symbol = key if values[:shortcut] == p_shortcut
+      break unless l_symbol.nil?
+    end
+    l_symbol
   end
 
   # def apply_option_default(p_options, p_key, p_default = nil)

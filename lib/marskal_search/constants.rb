@@ -37,6 +37,9 @@ class MarskalSearch
 
   #these are the available options
   VARIABLES = <<-eos
+                  :search_text, :q,
+                  :wrap_column,
+
                  :select_columns,
                  :not_distinct,
                  :joins, :includes_for_select_and_search, :includes_for_search_only,
@@ -46,23 +49,24 @@ class MarskalSearch
                  :ignore_default_search_field_exclusions,  :case_sensitive,
                  :order_string,
                  :offset, :limit, :page,
-                 :pass_back, :wrap_column
+                 :pass_back
   eos
 
-  WRITABLE = <<-eos
-                 :set_wrap_column
-  eos
+  # WRITABLE = <<-eos
+  #                :set_wrap_column
+  # eos
 
 
   #format is value for default to use position in list of keys
   # example
-  #  wrap_column: { default: 0, valid: [:if_special, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_special
+  #  wrap_column: { default: 0, valid: [:if_special, :never, :always ], schort_cut: short_cut_symbol } ==> the default is :if_special
   #
   #  wrap_column: { default: NO_DEFAULT, valid: [:if_special, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_special
   #   sets value to nil
   #
   VALID_KEYS = {
-      wrap_column: { default: 0, valid: [:if_special, :never, :always ]}
+      wrap_column: { default: 0, valid: [:if_special, :never, :always ]},
+      search_text: { default: '', shortcut: :q }# :q stands for query, this is what google uses as standard, so we adopted
   }
 
 

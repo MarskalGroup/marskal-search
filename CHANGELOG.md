@@ -1,6 +1,12 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.3 [`2015-12-15 by MAU`]
+* Modified call to remove paramater 2 and make it an option
+* Added shortccut functionality to the class
+* add :search_text key with shortcut :q 
+
+---
 ###### v0.3.2 [`2015-12-15 by MAU`]
 * Reasonable FirstVersion of help completed
 * wrap_column: has been used for an example

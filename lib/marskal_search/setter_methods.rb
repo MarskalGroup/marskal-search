@@ -17,6 +17,12 @@ class MarskalSearch
   #   return self
   # end
 
+  #setter function the :search_text option
+  def set_search_text(p_value)
+    @q = @search_text = p_value.to_s  #assign shortcut at sane time
+    return self
+  end
+
   #setter function the :wrap_column option
   def set_wrap_column(p_value)
     @wrap_column =  options_validator(:wrap_column, p_value)
@@ -31,7 +37,7 @@ class MarskalSearch
       l_default_index = VALID_KEYS[p_key.to_sym][:default]                #get the pointer to the valid key default
       p_value = l_default_index == NO_DEFAULT ? nil : VALID_KEYS[p_key.to_sym][:valid][l_default_index] #set default or nil if no default is provided
     else
-      symbol_to_hash(p_value||:nil_not_allowed).assert_valid_keys(VALID_KEYS[p_key.to_sym][:valid]) #no check if the key is valid
+      symbol_to_hash(p_value||:nil_not_allowed).assert_valid_keys(VALID_KEYS[p_key.to_sym][:valid]) #now check if the key is valid
     end
     return p_value  #return the appropriate value
   end
