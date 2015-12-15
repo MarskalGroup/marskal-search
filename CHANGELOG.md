@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.4 [`2015-12-15 by MAU`]
+* Added ability to dynamical create a model via 'create_table:' option
+* Added .table_name and .database getters/readers to display the database and table name associated with model 
+
+---
 ###### v0.3.3 [`2015-12-15 by MAU`]
 * Modified call to remove paramater 2 and make it an option
 * Added shortccut functionality to the class

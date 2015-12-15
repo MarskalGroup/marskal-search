@@ -100,32 +100,22 @@ require_relative  'setter_methods'
 require_relative  'help'
 
 class MarskalSearch
-
-
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
   # attr_accessor  :search_text
-  attr_reader  :klass
-  attr_reader  :q
-
-
-  def symbol_to_hash(p_symbol)
-    return p_symbol if p_symbol.is_a?(Hash)
-    l_hash = {}
-    l_hash[p_symbol.to_sym] = nil
-    l_hash
-  end
+  attr_reader  :model, :q, :table_name, :database
 
 
   #intialize class
-  def initialize(p_class, options = {})
+  def initialize(options = {})
     eval "options.assert_valid_keys(#{VARIABLES})"          #only allow legit options
 
-    @klass = p_class.is_a?(String) ? (eval p_class.classify) : p_class  #if string convert to a class
-
+    @model = find_or_build_model(options)
+    @table_name = @model.table_name
+    @database = @model.connection.current_database
 
     #Select parameters
-    self.select_columns = (options[:select_columns]||[]).empty? ? @klass.column_names : options[:select_columns]
+    self.select_columns = (options[:select_columns]||[]).empty? ? @model.column_names : options[:select_columns]
     @not_distinct =  options.has_key?(:not_distinct)
 
     #joins and include parameters
@@ -238,7 +228,7 @@ class MarskalSearch
 
   #get the searchable fields based on the current settings
   def searchable_fields
-    @search_only_these_fields.empty? ? marskal_searchable_fields(@klass, combine_joins) : @search_only_these_fields
+    @search_only_these_fields.empty? ? marskal_searchable_fields(@model, combine_joins) : @search_only_these_fields
   end
 
   # take all the associations as passed via the options and build them into more usable joins for mysql, while maintaining them in rails format
@@ -252,7 +242,7 @@ class MarskalSearch
     #first process the standard rails joins as is
     @joins.each_with_index do |l_association_symbol|
       l_association_symbol = (eval l_association_symbol) unless l_association_symbol.is_a?(Symbol)    #get the symbol for the sub-table class
-      l_association = @klass.marskal_find_association(l_association_symbol)                          #get the association
+      l_association = @model.marskal_find_association(l_association_symbol)                          #get the association
       next if l_association.nil?                                                                      #if we cant find it, then we just move on
       l_combine_joins << { klass: l_association.derive_class_from_association,                        #otherwise we store it in our hash array
                            join_sql: l_association_symbol,
@@ -263,11 +253,11 @@ class MarskalSearch
     #TODO: This will likely fall apart if two select_and_search includes come from same table, in that case we probably will have to resort to an alias as we did above, need to test sep/2014 MAU
     @includes_for_select_and_search.each_with_index do |l_association_symbol|
       l_association_symbol = (eval l_association_symbol) unless l_association_symbol.is_a?(Symbol)    #get the symbol for the sub-table class
-      l_association = @klass.marskal_find_association(l_association_symbol)                           #get the association
+      l_association = @model.marskal_find_association(l_association_symbol)                           #get the association
       next if l_association.nil?                                                                      #if we cant find it, then we just move on
       l_join_hash = { klass: nil, join_sql: '', alias: nil }                                          #set defaults
       l_join_hash[:klass] = l_association.derive_class_from_association                               #get class
-      l_join_hash[:join_sql] = "LEFT JOIN #{@klass .joins(l_association_symbol).to_sql.split('INNER JOIN').last}" #convert from INNER JOIN TO LEFT JOIN
+      l_join_hash[:join_sql] = "LEFT JOIN #{@model .joins(l_association_symbol).to_sql.split('INNER JOIN').last}" #convert from INNER JOIN TO LEFT JOIN
       l_combine_joins << l_join_hash
     end
 
@@ -276,14 +266,14 @@ class MarskalSearch
     unless @search_text.blank?
       @includes_for_search_only.each_with_index do |l_association_symbol, l_alias_ctr|
         l_association_symbol = (eval l_association_symbol) unless l_association_symbol.is_a?(Symbol)    #get the symbol for the sub-table class
-        l_association = @klass.marskal_find_association(l_association_symbol)                           #get the association
+        l_association = @model.marskal_find_association(l_association_symbol)                           #get the association
         next if l_association.nil?                                                                      #if we cant find it, then we just move on
 
         l_join_hash = { klass: nil, join_sql: '', alias: nil }                                          #set defaults
         l_join_hash[:klass] = l_association.derive_class_from_association                               #get class
         l_join_hash[:alias] = "alias#{l_alias_ctr}"                                                     #assign an alias to avoid ambiguous column errors
 
-        l_aliased_join_conditions =@klass.joins(l_association_symbol).to_sql.split('INNER JOIN').last.split(' ON ').last.gsub(l_join_hash[:klass].table_name, l_join_hash[:alias]) #replace table names with alis name
+        l_aliased_join_conditions =@model.joins(l_association_symbol).to_sql.split('INNER JOIN').last.split(' ON ').last.gsub(l_join_hash[:klass].table_name, l_join_hash[:alias]) #replace table names with alis name
         l_join_hash[:join_sql] = "LEFT OUTER JOIN `#{l_join_hash[:klass].table_name}` `#{l_join_hash[:alias]}` ON #{l_aliased_join_conditions}"  #create an outer join
 
         l_combine_joins << l_join_hash
@@ -436,22 +426,22 @@ class MarskalSearch
     p_exclude_offset_and_limit = p_options[:exclude_offset_and_limit]||false
     p_prepare_select_for_count = p_options[:prepare_select_for_count]||false
 
-    l_relation =  @klass.where(@default_where||'')
-    l_relation.merge! @klass.distinct unless @not_distinct #establish a starting point to the relation
-    l_relation.merge!(@klass.select(select_string(p_prepare_select_for_count))) unless @select_columns.empty?   #apply select if available
+    l_relation =  @model.where(@default_where||'')
+    l_relation.merge! @model.distinct unless @not_distinct #establish a starting point to the relation
+    l_relation.merge!(@model.select(select_string(p_prepare_select_for_count))) unless @select_columns.empty?   #apply select if available
 
     joins = combine_joins.map { |join| join[:join_sql]}                             #build all the joins
-    l_relation.merge!(@klass.joins(joins)) unless joins.blank?                      #apply joins if available
+    l_relation.merge!(@model.joins(joins)) unless joins.blank?                      #apply joins if available
 
     where_clause = complete_where_clause(p_options)                                 #build WHERE CLAUSE AND SEARCH TEXT
-    l_relation.merge!(@klass.where(where_clause)) unless where_clause.blank?        #apply if available
-    l_relation.merge!(@klass.order(@order_string)) unless @order_string.blank? || p_exclude_order #apply order if available
+    l_relation.merge!(@model.where(where_clause)) unless where_clause.blank?        #apply if available
+    l_relation.merge!(@model.order(@order_string)) unless @order_string.blank? || p_exclude_order #apply order if available
 
     unless p_exclude_offset_and_limit
       if @offset                                      #apply offset and/or limit as requested
-        l_relation.merge!(@klass.offset(@offset).limit(valid_limit))
+        l_relation.merge!(@model.offset(@offset).limit(valid_limit))
       elsif @limit
-        l_relation.merge!(@klass.limit(valid_limit))
+        l_relation.merge!(@model.limit(valid_limit))
       end
     end
 
@@ -500,7 +490,7 @@ class MarskalSearch
   end
 
   def sanitize(l_sql_string)
-    @klass.sanitize(l_sql_string)
+    @model.sanitize(l_sql_string)
   end
 
   def testme
@@ -520,7 +510,8 @@ class MarskalSearch
     #order by contacts last_name then first
     #get the first 10 records
     #Note 'new' cause the the creation not the execution, basically just prepares for other methods show further below
-    m = MarskalSearch.new(User, 'mike',
+    m = MarskalSearch.new(model: User,
+                          search_text: 'mike',
                           joins: :contacts,
                           select_columns: "users.last_name, users.first_name, users.id, contacts.last_name, contacts.first_name",
                           where_string:  'active = true',
@@ -544,7 +535,9 @@ class MarskalSearch
     #return the names from both tables and the user_id
     #order by contacts last_name then first
     #get the first 10 records
-    m1 = MarskalSearch.new(User, 'mike',
+    m1 = MarskalSearch.new(model: User,
+                          search_text: 'mike',
+
                            includes_for_select_and_search: :contacts,
                            select_columns: "users.last_name, users.first_name, users.id, contacts.last_name, contacts.first_name",
                            where_string:  'active = true',
@@ -561,7 +554,8 @@ class MarskalSearch
     #NOTE this is basically like saying, give me all the users that have mike in the user record or the related detail records in contacts
     # even if the contacts table has 100 mikes connected with user, only a single record would be returned for teh user
     #nothing from the contact record is return..it is simply there for search needs
-    m2 = MarskalSearch.new(User, 'mike',
+    m2 = MarskalSearch.new(model: User,
+                          search_text: 'mike',
                            includes_for_search_only: :contacts,
                            select_columns: "users.last_name, users.first_name, users.id",
                            where_string:  'active = true',
@@ -571,8 +565,8 @@ class MarskalSearch
     )
 
     #these can be daisy chained as well
-    MarskalSearch.new(User, 'mike', includes_for_search_only: :contacts).count
-    MarskalSearch.new(User, 'mike', includes_for_search_only: :contacts).results
+    MarskalSearch.new(model: User, search_text: 'mike', includes_for_search_only: :contacts).count
+    MarskalSearch.new(model: User, search_text: 'mike', includes_for_search_only: :contacts).results
 
 
   end

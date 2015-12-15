@@ -1,5 +1,11 @@
 class MarskalSearch
 
+  ERRORS = {
+      unable_to_create_table: 'Unable to create a model for table:',
+      need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_table:[table_name, connection_name]' to create the model dynamically",
+      invalid_format_create_table: "create_table: must either be an array or string.  ex: create_table: 'my_table', create_table: ['my_table', 'db_connection'] db_connection will default to app default if not provided"
+  }
+
 
   COLUMN_WRAPPER_CHAR = "`"
   MAX_LIMIT = 18446744073709551615                                    #mysql max to be used when an offset is given with no limit
@@ -39,6 +45,8 @@ class MarskalSearch
   VARIABLES = <<-eos
                   :search_text, :q,
                   :wrap_column,
+                  :model,
+                  :create_table,
 
                  :select_columns,
                  :not_distinct,
@@ -65,8 +73,10 @@ class MarskalSearch
   #   sets value to nil
   #
   VALID_KEYS = {
-      wrap_column: { default: 0, valid: [:if_special, :never, :always ]},
-      search_text: { default: '', shortcut: :q }# :q stands for query, this is what google uses as standard, so we adopted
+      wrap_column:  { default: 0, valid: [:if_special, :never, :always ]},
+      search_text:  { default: '', shortcut: :q }, # :q stands for query, this is what google uses as standard, so we adopted
+      model:        { default: nil },
+      create_table: { default: nil },
   }
 
 
