@@ -90,12 +90,12 @@
 #   IMPORTANT NOTE:   :offset and :limit have not effect on the count and count_filtered methods, these methods will consider the entire data set
 
 # new features as 12/2015
-#   :wrap_column     :never, :always, :if_reserved ==> default is if_reserved
+#   :wrap_column     :never, :always, :if_special ==> default is if_special
 
 
 require_relative  'constants'
 require_relative  'setter_methods'
-# require_relative  'help'
+require_relative  'help'
 
 class MarskalSearch
 
@@ -445,8 +445,8 @@ class MarskalSearch
     return l_relation
   end
 
-  def self.help(p_key = nil)
-    MarskalSearch::Help.commands(p_key)
+  def self.help(p_key, p_wrap)
+    MarskalSearch::Help.commands(p_key, p_wrap)
   end
 
   private
@@ -743,7 +743,7 @@ class MarskalSearch
   end
 
   def wrap_columns(p_columns)
-      return p_columns  unless[:if_reserved, :always].include?(@wrap_column)
+      return p_columns  unless[:if_special, :always].include?(@wrap_column)
       p_columns.map {|p_column| ((@wrap_column == :always) || WRAP_THESE_RESERVED_WORDS.include?(p_column.downcase)) ? "#{COLUMN_WRAPPER_CHAR}#{p_column}#{COLUMN_WRAPPER_CHAR}" : p_column }
   end
 

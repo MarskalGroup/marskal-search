@@ -5,14 +5,57 @@ wrap_column:
   getter:   <marskal object>.wrap_column
   setter:   <marskal object>.set_wrap_column([setting])
   description: |+
-              This was originally designed to accommodate cases where reserved words  cause problems in mysql. In my case I defined a mysql field called "primary".
-              This caused a problem as follows:
+                This was originally designed to accommodate cases where reserved words  cause problems in mysql. In my case I defined a mysql field called "primary".+
+                this should not start the line
+                This caused a problem as follows:
 
-              \tProblem:  SELECT primary FROM lists;
+                \tProblem:  SELECT primary FROM lists;
 
-              \tSolution: SELECT `primary` FROM lists;
+                \tSolution: SELECT `primary` FROM lists;
 
-              See OPTIONS below for examples of how to address this problem as needed
-  options: |+
-        This searched known reserved words and will only wrap those columns in a select statement with a ` character.
-        So In the case
+                See OPTIONS below for examples of how to address this problem as needed
+  options:
+   if_special:
+      name:     ':if_special (default setting if undefined or  passed :default)'
+      description: |+
+                This will search through reserved words and if found such as "primary", wrap only that column in a single quoute.+
+                At this time(12/2015), this only works for :select_columns. Possibly a later version will handle this in where and order by clauses as needed.+
+                Future processing should also consider NOT wraping special cases like CONCAT or calculations as the wrap character would mess these up.+
+                However this version does not accommodate any special process beyond a short list of reserve word replacement.
+   never:
+      name:     ':never'
+      description: |+
+                No Wrapping charcter will ever be places around any call. All :select_columns will be handled as passed by the calling program
+   always:
+      name:     ':always'
+      description: |+
+                Always use wrap character around all :select_columns
+  examples: |+
+            NOTE: ** any accent characters around table names and othwe parts of the sql are a function of the ruby/rails to.sql() method+
+            To View any query without executing it, simply use MarskalSearc to_sql method
+
+            For Example example:
+            \ttmobj.MarsalObject.new(User,:select_columns=['name','primary'])
+            \tms.to_sql  #this will return the sql string as MarskalSearch Sees it.
+
+            Usage Examples:
+            \tGiven:  cols = ['name','primary']
+
+            \tx=MarsalObject.new(User,select_columns: cols)
+            \tx=MarsalObject.new(User,{select_columns: cols, wrap_column: :if_special})
+            \tx=MarsalObject.new(User,{select_columns: cols, wrap_column: :default})
+            \tResult:  SELECT  id, `primary`.* FROM `users`
+
+            \tx=MarsalObject.new(User,{select_columns: cols, wrap_column: :never })
+            \tResult:  SELECT  id, primary.* FROM `users`
+
+            \tx=MarsalObject.new(User,{select_columns: cols, wrap_column: :always})
+            \tResult:  SELECT  `id`, `primary`.* FROM `users`
+
+            Changing value after Intialization:
+            \tmarskal_object=MarsalObject.new(User, select_columns: cols)
+
+            \tUsage:   marskal_object.set_wrap_column(option)
+            \tExample: marskal_object.set_wrap_column(:always)
+  coming_soon:
+

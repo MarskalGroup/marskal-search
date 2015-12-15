@@ -56,13 +56,13 @@ class MarskalSearch
 
   #format is value for default to use position in list of keys
   # example
-  #  wrap_column: { default: 0, valid: [:if_reserved, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_reserved
+  #  wrap_column: { default: 0, valid: [:if_special, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_special
   #
-  #  wrap_column: { default: NO_DEFAULT, valid: [:if_reserved, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_reserved
+  #  wrap_column: { default: NO_DEFAULT, valid: [:if_special, :never, :always ], tip: 'some helpful info here' } ==> the default is :if_special
   #   sets value to nil
   #
   VALID_KEYS = {
-      wrap_column: { default: 0, valid: [:if_reserved, :never, :always ]}
+      wrap_column: { default: 0, valid: [:if_special, :never, :always ]}
   }
 
 

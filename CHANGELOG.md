@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.2 [`2015-12-15 by MAU`]
+* Reasonable FirstVersion of help completed
+* wrap_column: has been used for an example
+
+---
 ###### v0.3.1 [`2015-12-14 by MAU`]
 * WIP cleanup documentation via help module
 * working on "\n" problems
