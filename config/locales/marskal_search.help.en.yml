@@ -1,14 +1,18 @@
 wrap_column:
   name:     ':wrap_column'
-  tip:      My Tips is %{foobar}
-  synopsis: <%= MarskalSearch::VALID_KEYS[:wrap_column][:tip] %>
+  tip:      '<%= "Determines Rules for using an accent mark #{MarskalSearch::COLUMN_WRAPPER_CHAR} to wrap :select_columns"  %>'
+  synopsis: '<%= MarskalSearch::Help::default_synopsis(:wrap_column) %>'
   getter:   <marskal object>.wrap_column
   setter:   <marskal object>.set_wrap_column([setting])
-  description: >
-              It is a long established fact that a reader will be distracted by the readable content of a page when looking at its
-              layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to
-              using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web
-              page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web
-              sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on
-              purpose (injected humour and the like).
-  example:  Some Exmples Here
+  description: |+
+              This was originally designed to accommodate cases where reserved words  cause problems in mysql. In my case I defined a mysql field called "primary".
+              This caused a problem as follows:
+
+              \tProblem:  SELECT primary FROM lists;
+
+              \tSolution: SELECT `primary` FROM lists;
+
+              See OPTIONS below for examples of how to address this problem as needed
+  options: |+
+        This searched known reserved words and will only wrap those columns in a select statement with a ` character.
+        So In the case

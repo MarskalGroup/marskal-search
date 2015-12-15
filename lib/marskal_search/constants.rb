@@ -62,7 +62,7 @@ class MarskalSearch
   #   sets value to nil
   #
   VALID_KEYS = {
-      wrap_column: { default: 0, valid: [:if_reserved, :never, :always ], tip: "Determines Rules for using #{COLUMN_WRAPPER_CHAR} to wrap :select_columns" }
+      wrap_column: { default: 0, valid: [:if_reserved, :never, :always ]}
   }
 
 

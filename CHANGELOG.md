@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.1 [`2015-12-14 by MAU`]
+* WIP cleanup documentation via help module
+* working on "\n" problems
+
+---
 ###### v0.3.0 [`2015-12-14 by MAU`]
 * starting rewrite of methods and adding help
 * this is only a semi-working version

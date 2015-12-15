@@ -95,7 +95,7 @@
 
 require_relative  'constants'
 require_relative  'setter_methods'
-require_relative  'help'
+# require_relative  'help'
 
 class MarskalSearch
 
@@ -443,6 +443,10 @@ class MarskalSearch
     end
 
     return l_relation
+  end
+
+  def self.help(p_key = nil)
+    MarskalSearch::Help.commands(p_key)
   end
 
   private
