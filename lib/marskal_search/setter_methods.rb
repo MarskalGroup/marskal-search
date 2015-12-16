@@ -43,66 +43,66 @@ class MarskalSearch
 
   #this function will set the @model instance varaible for this instance.
   #it first check for a valid option[:model_name]
-  #if missing or invalid then it next checks options[:create_table] for values
-  #options[:create_table] can be a string or an array
+  #if missing or invalid then it next checks options[:create_model] for values
+  #options[:create_model] can be a string or an array
   #ex:
-  # options[:create_table] = 'my_table_name'
-  # options[:create_table] = ['my_table_name']                    #when no connection is provided, it will use the default of the application
-  # options[:create_table] = ['my_table_name', 'my_connection']   #Notes: for now we requre the connection be defined, this is usally done via database.yml file
-  def find_or_build_model(options)
-
-    l_new_class=nil   #init our new class
-    begin
-      if options.has_key?(:model)                                                                         #see if the passed us a model name
-        l_new_class = options[:model].is_a?(String) ? (eval options[:model].classify) : options[:model]   #if string convert to a class
-      end
-    rescue
-      nil #some error occurred, continue to next step
-    end
-
-    if l_new_class.nil? && options.has_key?(:create_table)                      #if class was not created && they gave us connection info
-      l_table_options = options[:create_table]                                  #lets parse the options so we can create a new model
-      if !(l_table_options.is_a?(String)  || l_table_options.is_a?(Array)) ||   #first validate if the option is in correct format
-          (l_table_options.is_a?(Array) &&
-              (l_table_options.length > 2 || l_table_options.empty?) || !l_table_options[0].is_a?(String))
-        raise ERRORS[:invalid_format_create_table]                               #raise error if a problem was found
-      end
-      l_connection = ''                               #set default to nothing. This means the default will be the app default
-      if l_table_options.is_a?(String)                #extract table_name and connection based on data types
-        l_table = l_table_options
-      else
-        l_table = l_table_options[0]
-        l_connection = l_table_options[1] if l_table_options.length > 1
-      end
-      l_new_class = create_dynamic_model(l_table, l_connection)    #lets get our new class
-    end
-
-    raise "#{options[:model]} #{ERRORS[:need_model]}" if l_new_class.nil? #error out if we dont have a model yet, we are out of things to try
-
-    l_new_class #return the class
-
-  end
-
-  #TODO: find better way to create a dynamic model, this may cause crashing with two people hitting the table at the same time
-  def create_dynamic_model(p_table, p_connection)                   #create a model in memory if not exists
-    l_model = "#{p_connection.singularize}_#{p_table}".classify     #make a legit class name
-    l_connection = p_connection.to_s.blank? ? '' : "establish_connection :#{p_connection}"
-    begin
-      eval <<DYNAMIC                                                #if the model does not exist, then lets create it on the fly
-      class #{l_model} < ActiveRecord::Base
-        #{l_connection}
-        self.table_name = '#{p_table}'
-      end
-DYNAMIC
-
-      l_new_model = eval l_model     #ok lets store are model in a variable
-      raise '' unless l_new_model.table_exists?
-    rescue
-      raise "#{ERRORS[:unable_to_create_table]}: #{p_table} in connection #{p_connection}"  #display error if the requested table does not exists
-    end
-    return l_new_model                                                                   #return the requested model
-  end
-
-
+  # options[:create_model] = 'my_table_name'
+  # options[:create_model] = ['my_table_name']                    #when no connection is provided, it will use the default of the application
+  # options[:create_model] = ['my_table_name', 'my_connection']   #Notes: for now we requre the connection be defined, this is usally done via database.yml file
+#   def find_or_build_model(options)
+#
+#     l_new_class=nil   #init our new class
+#     begin
+#       if options.has_key?(:model)                                                                         #see if the passed us a model name
+#         l_new_class = options[:model].is_a?(String) ? (eval options[:model].classify) : options[:model]   #if string convert to a class
+#       end
+#     rescue
+#       nil #some error occurred, continue to next step
+#     end
+#
+#     if l_new_class.nil? && options.has_key?(:create_model)                      #if class was not created && they gave us connection info
+#       l_table_options = options[:create_model]                                  #lets parse the options so we can create a new model
+#       if !(l_table_options.is_a?(String)  || l_table_options.is_a?(Array)) ||   #first validate if the option is in correct format
+#           (l_table_options.is_a?(Array) &&
+#               (l_table_options.length > 2 || l_table_options.empty?) || !l_table_options[0].is_a?(String))
+#         raise ERRORS[:invalid_format_create_model]                               #raise error if a problem was found
+#       end
+#       l_connection = ''                               #set default to nothing. This means the default will be the app default
+#       if l_table_options.is_a?(String)                #extract table_name and connection based on data types
+#         l_table = l_table_options
+#       else
+#         l_table = l_table_options[0]
+#         l_connection = l_table_options[1] if l_table_options.length > 1
+#       end
+#       l_new_class = create_dynamic_model(l_table, l_connection)    #lets get our new class
+#     end
+#
+#     raise "#{options[:model]} #{ERRORS[:need_model]}" if l_new_class.nil? #error out if we dont have a model yet, we are out of things to try
+#
+#     l_new_class #return the class
+#
+#   end
+#
+#   #TODO: find better way to create a dynamic model, this may cause crashing with two people hitting the table at the same time
+#   def create_dynamic_model(p_table, p_connection)                   #create a model in memory if not exists
+#     l_model = "#{p_connection.singularize}_#{p_table}".classify     #make a legit class name
+#     l_connection = p_connection.to_s.blank? ? '' : "establish_connection :#{p_connection}"
+#     begin
+#       eval <<DYNAMIC                                                #if the model does not exist, then lets create it on the fly
+#       class #{l_model} < ActiveRecord::Base
+#         #{l_connection}
+#         self.table_name = '#{p_table}'
+#       end
+# DYNAMIC
+#
+#       l_new_model = eval l_model     #ok lets store are model in a variable
+#       raise '' unless l_new_model.table_exists?
+#     rescue
+#       raise "#{ERRORS[:unable_to_create_model]}: #{p_table} in connection #{p_connection}"  #display error if the requested table does not exists
+#     end
+#     return l_new_model                                                                   #return the requested model
+#   end
+#
+#
 
 end

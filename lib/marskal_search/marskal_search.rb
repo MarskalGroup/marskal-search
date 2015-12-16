@@ -97,22 +97,25 @@
 
 require_relative  'constants'
 require_relative  'setter_methods'
-require_relative  'help'
+require_relative  'marskal_help'
+require_relative  'marskal_utils'
 
 class MarskalSearch
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
   # attr_accessor  :search_text
-  attr_reader  :model, :q, :table_name, :database
+  attr_reader  :model, :q, :table_name, :database, :model_id
 
 
   #intialize class
   def initialize(options = {})
     eval "options.assert_valid_keys(#{VARIABLES})"          #only allow legit options
 
-    @model = find_or_build_model(options)
-    @table_name = @model.table_name
-    @database = @model.connection.current_database
+    @model_id = self.object_id
+    @model = Utils::find_or_build_model(@model_id, options)                   #get the model or build a new model as needed
+
+    @table_name = @model.table_name                         #set the instance variable withe table name
+    @database = @model.connection.current_database          #and the database name
 
     #Select parameters
     self.select_columns = (options[:select_columns]||[]).empty? ? @model.column_names : options[:select_columns]

@@ -1,12 +1,15 @@
 class MarskalSearch
 
   ERRORS = {
-      unable_to_create_table: 'Unable to create a model for table:',
-      need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_table:[table_name, connection_name]' to create the model dynamically",
-      invalid_format_create_table: "create_table: must either be an array or string.  ex: create_table: 'my_table', create_table: ['my_table', 'db_connection'] db_connection will default to app default if not provided"
+      no_table: 'Table Does Not Exist:: ',
+      unable_to_create_model: 'Unable to create a model for table:',
+      need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_model:[table_name, connection_name]' to create the model dynamically",
+      invalid_format_create_model: "create_model: must either be an array or string.  ex: create_model: 'my_table', create_model: ['my_table', 'db_connection'] db_connection will default to app default if not provided"
   }
 
 
+
+  COLUMN_MODEL_STARTER = 'Marskal'
   COLUMN_WRAPPER_CHAR = "`"
   MAX_LIMIT = 18446744073709551615                                    #mysql max to be used when an offset is given with no limit
   EXCLUDE_SEARCHABLE_COLUMN_LIST = ['id','created_at', 'updated_at']  #by default eliminate these as 'searchable' columns
@@ -46,7 +49,7 @@ class MarskalSearch
                   :search_text, :q,
                   :wrap_column,
                   :model,
-                  :create_table,
+                  :create_model,
 
                  :select_columns,
                  :not_distinct,
@@ -76,7 +79,8 @@ class MarskalSearch
       wrap_column:  { default: 0, valid: [:if_special, :never, :always ]},
       search_text:  { default: '', shortcut: :q }, # :q stands for query, this is what google uses as standard, so we adopted
       model:        { default: nil },
-      create_table: { default: nil },
+      create_model: { default: nil },
+      select_columns:  { default: '', shortcut: :c } # :c is for columns
   }
 
 
