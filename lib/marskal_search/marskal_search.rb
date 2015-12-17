@@ -97,6 +97,7 @@
 
 require_relative  'constants'
 require_relative  'setter_methods'
+require_relative  'getter_methods'
 require_relative  'marskal_help'
 require_relative  'marskal_utils'
 
@@ -393,7 +394,9 @@ class MarskalSearch
 
   def full_page_vars(p_rows)
     l_result = {
-                  filteredCount: count
+                  filteredCount: count,
+                  column_details: column_details
+
     }
 
     l_result[:unfilteredRowCount] =  has_where? ? count_all() :  l_result[:filteredCount]

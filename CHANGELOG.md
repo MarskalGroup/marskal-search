@@ -1,6 +1,11 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.6 [`2015-12-16 by MAU`]
+* added column details method
+* I still need to integrate it in
+
+---
 ###### v0.3.5 [`2015-12-16 by MAU`]
 * renamed parameter create_table: to create_model
 * changed the way I create a new dymanic moel
