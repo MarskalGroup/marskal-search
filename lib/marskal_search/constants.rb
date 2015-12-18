@@ -19,6 +19,8 @@ class MarskalSearch
   JQGRID = :jqgrid
   MARSKAL_API = :marskal_api
 
+  FORCE_REPARSE_OF_LAST_SELECT = "FORCE"
+
   WRAP_THESE_RESERVED_WORDS = [ 'primary', 'query', 'type' ]
 
 

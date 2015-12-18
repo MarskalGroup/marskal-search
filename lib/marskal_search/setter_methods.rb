@@ -21,7 +21,41 @@ class MarskalSearch
     return self
   end
 
+  def set_select_string(p_select_clause)
+    if @select_depot.nil?
+      @select_depot = {
+          original_param: p_select_clause,
+          last_parse: nil,
+          column_details: nil,
+          count: nil,
+          count_distinct: nil,
+      }
+    else
+      if p_select_clause == FORCE_REPARSE_OF_LAST_SELECT    #are we forcing a reparse using the
+        p_select_clause = @select_depot[:last_parse]
+      elsif p_select_clause == @select_depot[:last_parse]  #nothing change we dont need to process again
+        return self
+      end
+    end
+    @select_depot[:last_parse] = p_select_clause  #now lets set before we parse
+
+    #if empty set, lets get all the columns for now
+    p_select_clause =  @model.column_names if (p_select_clause.is_a?(Array) && p_select_clause.empty?) || p_select_clause.to_s.blank?
+
+    column_details(p_select_clause) # now we have eithe a column of fields or an sql string, lets get some details
+    @select_depot[:count] = "*"
+    # @select_depot[:count_distinct] = wrap_columns(@select_columns).sql_null_to_blank.to_string_no_brackets_or_quotes
+    self
+  end
+
+  def set_distinct(p_value)
+    @use_distinct = p_value
+    self
+  end
+
  private
+  #TODO: set private :method for each private method
+
    #used VALID_KEYS along with the filed (key) to reset the value as allowed
   def options_validator(p_key, p_value)
     raise "#{p_key} not in VALID_KEYS" unless VALID_KEYS.has_key?(p_key)  #rails error if not defined in VALID_KEYS
@@ -40,6 +74,7 @@ class MarskalSearch
     l_hash[p_symbol.to_sym] = nil
     l_hash
   end
+  private :options_validator, :symbol_to_hash
 
   #this function will set the @model instance varaible for this instance.
   #it first check for a valid option[:model_name]

@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.7 [`2015-12-17 by MAU`]
+* Testing out a parser for select columns, iffy in long term all case scenerios
+
+---
 ###### v0.3.6 [`2015-12-16 by MAU`]
 * added column details method
 * I still need to integrate it in

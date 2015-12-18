@@ -17,7 +17,7 @@
 #                     **ex:  "['contacts.last_name', 'contacts.first_name']"
 #                     **joined table example: "['contacts.last_name', 'contacts.first_name', 'contact_phone_numbers.phone_number']"
 #                     default: If blank, all fields will be selected from the primary table only unless otherwise changed by other options
-#   :not_distinct => Duplicates Allowed? Note this does not just look at any one field..it looks at the entire selected fieldset
+#   :distinct => Duplicates Allowed? Note this does not just look at any one field..it looks at the entire selected fieldset
 #                     Default: false    (no duplicates will be returned)
 #   :joins        => Equivalent to the .joins option of an ActiveRecord relation. This parameters is simple passed on to that
 #                     Example Single association ==> joins: :contact_phone_numbers
@@ -105,7 +105,7 @@ class MarskalSearch
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
   # attr_accessor  :search_text
-  attr_reader  :model, :q, :table_name, :database, :model_id
+  attr_reader  :model, :q, :table_name, :database, :model_id, :smart_select, :select_depot, :use_distinct
 
 
   #intialize class
@@ -118,9 +118,11 @@ class MarskalSearch
     @table_name = @model.table_name                         #set the instance variable withe table name
     @database = @model.connection.current_database          #and the database name
 
-    #Select parameters
-    self.select_columns = (options[:select_columns]||[]).empty? ? @model.column_names : options[:select_columns]
-    @not_distinct =  options.has_key?(:not_distinct)
+    # #Select parameters
+    # self.select_columns = (options[:select_columns]||[]).empty? ? @model.column_names : options[:select_columns]
+
+    set_select_string(options[:select_columns])
+
 
     #joins and include parameters
     self.joins = options[:joins]
@@ -154,7 +156,7 @@ class MarskalSearch
 
     set_wrap_column(options[:wrap_column]||:default)
     set_search_text(options[:search_text]||options[:q])
-
+    set_distinct(options[:distinct]||false)
 
   end
 
@@ -182,19 +184,26 @@ class MarskalSearch
   end
 
   def select_string(p_prepare_for_count = false)
-    l_select_string = ''
-    unless @select_columns.blank?
-      #ran into an issue with counting matching the actual result set...when you do a count, null values are not considered, so
-      #to ensure we consider all fields, we apply an IFNULL(field, '') to get around this problem mau 10/2014
-      if p_prepare_for_count && @not_distinct
-        l_select_string = '*'
-      elsif p_prepare_for_count
-        l_select_string = wrap_columns(@select_columns).sql_null_to_blank.to_string_no_brackets_or_quotes
-      else
-        l_select_string = wrap_columns(@select_columns).to_string_no_brackets_or_quotes
-      end
+    if p_prepare_for_count
+      l_select_string = @use_distinct ? @select_depot[:count_distinct] : @select_depot[:count]
+    else
+      l_select_string = @select_depot[:ready_for_sql]
     end
-    l_select_string  #return resulting string
+    l_select_string
+
+   # l_select_string = ''
+   #  unless @select_columns.blank?
+   #    #ran into an issue with counting matching the actual result set...when you do a count, null values are not considered, so
+   #    #to ensure we consider all fields, we apply an IFNULL(field, '') to get around this problem mau 10/2014
+   #    if p_prepare_for_count && @not_distinct
+   #      l_select_string = '*'
+   #    elsif p_prepare_for_count
+   #      l_select_string = wrap_columns(@select_columns).sql_null_to_blank.to_string_no_brackets_or_quotes
+   #    else
+   #      l_select_string = wrap_columns(@select_columns).to_string_no_brackets_or_quotes
+   #    end
+   #  end
+   #  l_select_string  #return resulting string
   end
 
   #make sure an array is returned
@@ -356,17 +365,21 @@ class MarskalSearch
 
   #do an active record 'pluck'
   def pluck
-    @select_columns.empty? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
+    #OLD CODE @select_columns.empty? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
+    active_record_relation.pluck(@select_depot[:ready_for_sql])
   end
 
   #do an active record 'pluck'
   def pluck_with_names
-    l_records = select_string.blank? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
+    #OLDl_records = select_string.blank? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
+    l_records = active_record_relation.pluck(@select_depot[:ready_for_sql])
     l_data = []
     l_records.each do |l_record|
       l_hash = {}
-      @select_columns.each_with_index do |l_column, index|
-        l_hash[l_column.to_sym]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
+      @select_depot[:column_details].each_with_index do |l_column, index|
+        l_name = l_column[:alias].blank? ? l_column[:name] : l_column[:alias]
+        #l_hash[l_column.to_sym]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
+        l_hash[l_name]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
       end
       l_data << l_hash
     end
@@ -395,7 +408,7 @@ class MarskalSearch
   def full_page_vars(p_rows)
     l_result = {
                   filteredCount: count,
-                  column_details: column_details
+                  column_details: @select_depot[:column_details]
 
     }
 
@@ -433,8 +446,8 @@ class MarskalSearch
     p_prepare_select_for_count = p_options[:prepare_select_for_count]||false
 
     l_relation =  @model.where(@default_where||'')
-    l_relation.merge! @model.distinct unless @not_distinct #establish a starting point to the relation
-    l_relation.merge!(@model.select(select_string(p_prepare_select_for_count))) unless @select_columns.empty?   #apply select if available
+    l_relation.merge! @model.distinct if @use_distinct #establish a starting point to the relation
+    l_relation.merge!(@model.select(select_string(p_prepare_select_for_count))) #unless @select_columns.empty?   #apply select if available
 
     joins = combine_joins.map { |join| join[:join_sql]}                             #build all the joins
     l_relation.merge!(@model.joins(joins)) unless joins.blank?                      #apply joins if available
