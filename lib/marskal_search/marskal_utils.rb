@@ -84,6 +84,46 @@ class MarskalSearch
       "#{COLUMN_MODEL_STARTER.downcase}_#{p_connection.singularize}_#{p_table.singularize}#{p_model_id}".classify
     end
 
+    #parses a parameter such as this
+    #ex: xl+(name)-(id)  => returns a hash with elements { token: plus: minus: }
+    #    xl+(last_name, first_name)-(salary+commission)  => returns { token: 'xl', plus: 'last_name, first_name', minus: 'salary+commission' }
+    def self.parse_plus_minus_param(p_param, p_error_code = nil)
+
+      l_valid_chars = %w(+ -)
+
+      l_parsed =  { token: p_param.split(/[\+\-]/).first, plus: nil, minus: nil }
+
+      l_regx = Regexp.new("(\\(.*?\\))")   #ignore + and - between open and close parenthesis ()
+      l_temp = p_param.clone.sub(l_parsed[:token],'')  #remove this first element
+      while !l_temp.blank?
+
+        unless l_valid_chars.include?(l_temp[0])
+          raise p_error_code unless p_error_code.nil?
+          return nil
+        end
+
+        l_parse_array_index = l_temp.slice!(0) ==  '+' ? :plus : :minus
+        if l_temp[0] != '('
+          raise p_error_code unless p_error_code.nil?
+          return nil
+        end
+
+        l_param_value = l_temp.match(l_regx)
+        unless l_param_value.nil?
+          l_param_value = l_param_value[0]
+          l_temp.slice!(0..(l_param_value.length-1))
+          l_parsed[l_parse_array_index] = l_param_value[1..(l_param_value.length-2)] #remove parenthesis
+        end
+
+      end
+
+      l_parsed #return parse array
+
+    end
+
+
+
+
   end #utils
 
 end #marskalsearch

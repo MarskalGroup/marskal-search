@@ -4,13 +4,17 @@ class MarskalSearch
       no_table: 'Table Does Not Exist:: ',
       unable_to_create_model: 'Unable to create a model for table:',
       need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_model:[table_name, connection_name]' to create the model dynamically",
-      invalid_format_create_model: "create_model: must either be an array or string.  ex: create_model: 'my_table', create_model: ['my_table', 'db_connection'] db_connection will default to app default if not provided"
+      invalid_format_create_model: "create_model: must either be an array or string.  ex: create_model: 'my_table', create_model: ['my_table', 'db_connection'] db_connection will default to app default if not provided",
+      invalid_select_view_format: "Invalid select view format: Usage sv=<[xs|sm|md|lg|xl]><.add|.sub><(fields in parenrthesis separated by commas)>. Examples: sv=xs.add(last_name) sv=xl.sub(client_id,employee_id) sv=sm.add(last_name, first_name).sub(salary+commission)"
   }
+
+  TIMESTAMP_FIELDS = %w(created_at updated_at)
 
 
 
   COLUMN_MODEL_STARTER = 'Marskal'
   COLUMN_WRAPPER_CHAR = "`"
+  MAX_LIMIT_WITHOUT_OVERRIDE = 200
   MAX_LIMIT = 18446744073709551615                                    #mysql max to be used when an offset is given with no limit
   EXCLUDE_SEARCHABLE_COLUMN_LIST = ['id','created_at', 'updated_at']  #by default eliminate these as 'searchable' columns
   EXCLUDE_SEARCHABLE_COLUMN_ENDING_IN = '_id'                         # also fields like , user_id, contact_id
@@ -52,8 +56,10 @@ class MarskalSearch
                   :wrap_column,
                   :model,
                   :create_model,
+                  :select_string,
+                  :select_view, :sv,
 
-                 :select_columns,
+
                  :not_distinct,
                  :joins, :includes_for_select_and_search, :includes_for_search_only,
                  :default_where, :where_string, :search_only_these_data_types,
@@ -82,7 +88,8 @@ class MarskalSearch
       search_text:  { default: '', shortcut: :q }, # :q stands for query, this is what google uses as standard, so we adopted
       model:        { default: nil },
       create_model: { default: nil },
-      select_columns:  { default: '', shortcut: :c } # :c is for columns
+      select_string:  { default: '', shortcut: :s },
+      select_view:  { default: 0, valid: [:xs, :sm, :md, :lg, :xl ], shortcut: :sv }
   }
 
 

@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.8 [`2015-12-17 by MAU`]
+* SavePoint: Got options[:sv] working, but need to test and document
+
+---
 ###### v0.3.7 [`2015-12-17 by MAU`]
 * Testing out a parser for select columns, iffy in long term all case scenerios
 

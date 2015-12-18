@@ -105,7 +105,7 @@ class MarskalSearch
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
   # attr_accessor  :search_text
-  attr_reader  :model, :q, :table_name, :database, :model_id, :smart_select, :select_depot, :use_distinct
+  attr_reader  :model, :q, :sv, :table_name, :database, :model_id, :smart_select, :select_depot, :use_distinct, :select_columns
 
 
   #intialize class
@@ -118,11 +118,7 @@ class MarskalSearch
     @table_name = @model.table_name                         #set the instance variable withe table name
     @database = @model.connection.current_database          #and the database name
 
-    # #Select parameters
-    # self.select_columns = (options[:select_columns]||[]).empty? ? @model.column_names : options[:select_columns]
-
-    set_select_string(options[:select_columns])
-
+    process_select(options)
 
     #joins and include parameters
     self.joins = options[:joins]
@@ -141,7 +137,7 @@ class MarskalSearch
 
     #order parameters
     @order_string = options[:order_string]|| ''
-    @limit = options[:limit]
+    @limit = options[:limit]||MAX_LIMIT_WITHOUT_OVERRIDE
 
     #sql retrieval parameters
     if options[:offset].nil?
@@ -178,10 +174,10 @@ class MarskalSearch
     @limit <= 0 ? MAX_LIMIT : @limit
   end
 
-  #make sure an array is returned
-  def select_columns=(p_columns)
-    @select_columns = Array(p_columns)
-  end
+  # #make sure an array is returned
+  # def select_columns=(p_columns)
+  #   @select_columns = Array(p_columns)
+  # end
 
   def select_string(p_prepare_for_count = false)
     if p_prepare_for_count
