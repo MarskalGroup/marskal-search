@@ -100,12 +100,13 @@ require_relative  'setter_methods'
 require_relative  'getter_methods'
 require_relative  'marskal_help'
 require_relative  'marskal_utils'
+require_relative  'marskal_output'
 
 class MarskalSearch
   # eval "attr_accessor  #{VARIABLES}"
   eval "attr_reader  #{VARIABLES}"
   # attr_accessor  :search_text
-  attr_reader  :model, :q, :sv, :table_name, :database, :model_id, :smart_select, :select_depot, :use_distinct, :select_columns
+  attr_reader  :model, :q, :sv, :table_name, :database, :model_id, :smart_select, :select_depot, :use_distinct, :output_settings
 
 
   #intialize class
@@ -117,6 +118,11 @@ class MarskalSearch
 
     @table_name = @model.table_name                         #set the instance variable withe table name
     @database = @model.connection.current_database          #and the database name
+
+    #set the output formats
+    set_format(options[:format]||DEFAULT)  #sets a predefined_format or default if not available
+    set_output_settings(options[:output_settings]) unless options[:output_settings].nil? #set @output_settings if provided
+
 
     process_select(options)
 
@@ -137,22 +143,23 @@ class MarskalSearch
 
     #order parameters
     @order_string = options[:order_string]|| ''
-    @limit = options[:limit]||MAX_LIMIT_WITHOUT_OVERRIDE
 
-    #sql retrieval parameters
-    if options[:offset].nil?
-      @offset = options[:page].nil? ? options[:offset] : ((options[:page].to_i * @limit) - @limit)
-    else
-      @offset = options[:offset]
+    #check for limit_override or limit being sent check override first. Allow shortcuts as :lo and :l, the second paramaters indicates whthere this is an override or not
+    set_limit(options[:lo]||options[:limit_override]||options[:limit]||options[:l], options.has_key?(:lo)||options.has_key?(:limit_override) )
+
+    if options[:offset].nil? && !options[:page].nil?          #if no offset was given ,but a page was supplied
+      set_page(options[:page].to_i)                           #then we will caluclate offset by using desired page and limit
+    else                                                      #else
+      set_offset( options[:offset].to_i)                      #just use the value provided. 0 will be the default
     end
-
 
     #other parameters
     @pass_back  =  options.has_key?(:pass_back) ? options[:pass_back] : nil #simply stores a hash that will be passed back as is..no changes
 
-    set_wrap_column(options[:wrap_column]||:default)
+    set_wrap_column(options[:wrap_column]||DEFAULT)
     set_search_text(options[:search_text]||options[:q])
     set_distinct(options[:distinct]||false)
+
 
   end
 
@@ -330,104 +337,59 @@ class MarskalSearch
     return l_where_clause
   end
 
-  #display the resulting sql (does not execute the query)
-  def to_sql
-    active_record_relation.to_sql
-  end
 
   #retyurn tru if there is a where clause and it has vales
   def has_where?
     !complete_where_clause().blank?
   end
 
-  #count completed unfiltered, no where_string, no search_text
-  #IMPORTANT_NOTE: The default scope will NEVER be excluded for counting purposes. It is essentially a fixed part of the query
-  #this is useful, when the entire set is actually just a subset of the overall data set
-  #for example:  a database may have 1000's of contacts, but any particular user will only be allowed access to a subset of that data
-  #in this case the default_scope would be something like "user_id = 100"
-  def count_all
-    active_record_relation(exclude_order: true, exclude_search_text: true, exclude_where_string: true, exclude_offset_and_limit: true, prepare_select_for_count: true).count
-  end
 
-  #count partially filtered, apply where_string, do not apply search_text
-  def count_without_search_text
-    active_record_relation(exclude_order: true, exclude_search_text: true, exclude_offset_and_limit: true, prepare_select_for_count: true).count
-  end
-
-  #count the result sets with all filters applied
-  def count
-    active_record_relation(exclude_order: true, exclude_offset_and_limit: true, prepare_select_for_count: true).count
-  end
-
-  #do an active record 'pluck'
-  def pluck
-    #OLD CODE @select_columns.empty? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
-    active_record_relation.pluck(@select_depot[:ready_for_sql])
-  end
-
-  #do an active record 'pluck'
-  def pluck_with_names
-    #OLDl_records = select_string.blank? ? active_record_relation.pluck : active_record_relation.pluck(select_string)
-    l_records = active_record_relation.pluck(@select_depot[:ready_for_sql])
-    l_data = []
-    l_records.each do |l_record|
-      l_hash = {}
-      @select_depot[:column_details].each_with_index do |l_column, index|
-        l_name = l_column[:alias].blank? ? l_column[:name] : l_column[:alias]
-        #l_hash[l_column.to_sym]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
-        l_hash[l_name]  = l_record.is_a?(Array) ? l_record[index] : l_record #if only one field, an Array is not returned, just the string
-      end
-      l_data << l_hash
-    end
-    l_data
-  end
-
-  #:format => default is an Array of ActiveRecord Objects
-  #:format => :datatables  return in a compatible format with the jquery datatables plugin
-  def results(p_options = {})
-    l_relation = active_record_relation
-    p_options.assert_valid_keys :format             #allow only legit options
-
-    #now execute and return data in requested format
-    if p_options[:format] == DATATABLES
-      l_results = { recordsTotal:  count_all, recordsFiltered: count, data: pluck }.merge(@pass_back || {})
-    elsif p_options[:format] == JQGRID
-      l_results = { total:  calc_pages(), records: count, rows: pluck_with_names }.merge(@pass_back || {})
-    elsif p_options[:format] == MARSKAL_API
-      l_results = full_page_vars(pluck_with_names)
-    else
-      l_results = full_page_vars(l_relation.to_a)
-    end
-    return l_results
-  end
-
-  def full_page_vars(p_rows)
-    l_result = {
-                  filteredCount: count,
-                  column_details: @select_depot[:column_details]
-
-    }
-
-    l_result[:unfilteredRowCount] =  has_where? ? count_all() :  l_result[:filteredCount]
-
-    l_result[:pageTotal] = calc_pages(l_result[:filteredCount])
-    l_result[:limit] = self.limit  unless self.limit.nil?
-
-    if  !p_rows.empty?  && (l_result[:offset].to_i < l_result[:filteredCount])
-      l_result[:offset] = self.offset unless self.offset.nil?
-      l_result[:currentPage] = calc_current_page(l_result[:filteredCount])
-    end
-
-    l_result[:pass_back] = @pass_back unless @pass_back.nil?
-    l_result[:rows] = p_rows
-
-    l_result
-  end
-
-  def attach_pass_back(p_results)
-    p_results.merge!({ pass_back: @pass_back }) unless @pass_back.nil?
-    p_results
-  end
+  # #:format => default is an Array of ActiveRecord Objects
+  # #:format => :datatables  return in a compatible format with the jquery datatables plugin
+  # def results(p_options = {})
+  #   l_relation = active_record_relation
+  #   p_options.assert_valid_keys :format             #allow only legit options
+  #
+  #   #now execute and return data in requested format
+  #   if p_options[:format] == DATATABLES
+  #     l_results = { recordsTotal:  count_all, recordsFiltered: count, data: pluck }.merge(@pass_back || {})
+  #   elsif p_options[:format] == JQGRID
+  #     l_results = { total:  calc_pages(), records: count, rows: pluck_with_names }.merge(@pass_back || {})
+  #   elsif p_options[:format] == MARSKAL_API
+  #     l_results = full_page_vars(pluck_with_names)
+  #   else
+  #     l_results = full_page_vars(l_relation.to_a)
+  #   end
+  #   return l_results
+  # end
+  #
+  # def full_page_vars(p_rows)
+  #   l_result = {
+  #                 filteredCount: count,
+  #                 column_details: @select_depot[:column_details]
+  #
+  #   }
+  #
+  #   l_result[:unfilteredRowCount] =  has_where? ? count_all() :  l_result[:filteredCount]
+  #
+  #   l_result[:pageTotal] = calc_pages(l_result[:filteredCount])
+  #   l_result[:limit] = self.limit  unless self.limit.nil?
+  #
+  #   if  !p_rows.empty?  && (l_result[:offset].to_i < l_result[:filteredCount])
+  #     l_result[:offset] = self.offset unless self.offset.nil?
+  #     l_result[:currentPage] = calc_current_page(l_result[:filteredCount])
+  #   end
+  #
+  #   l_result[:pass_back] = @pass_back unless @pass_back.nil?
+  #   l_result[:rows] = p_rows
+  #
+  #   l_result
+  # end
+  #
+  # def attach_pass_back(p_results)
+  #   p_results.merge!({ pass_back: @pass_back }) unless @pass_back.nil?
+  #   p_results
+  # end
 
   #display only: completed where clause
   #options:   (The main and probably only reason for these options, is so the query can do a unfiltered count, probably for pagination and results output)
@@ -726,19 +688,19 @@ class MarskalSearch
   end
 
   def calc_pages(p_count = self.count)
-    #if no limit was set, then it has to be pages 1
-    if self.limit.nil?
+    #if no limit was set, then it has to be total pages of 1
+    if @limit.nil?
       l_pages = 1
     else
-      l_extra_page = ((p_count % self.limit)) == 0 ? 0 : 1  #if we have an exact count dont add page, other wise add one more page
-      l_pages = (p_count / self.limit).to_i + l_extra_page
+      l_extra_page = ((p_count % @limit)) == 0 ? 0 : 1  #if we have an exact count dont add page, other wise add one more page
+      l_pages = (p_count / @limit).to_i + l_extra_page
     end
     l_pages
   end
 
   def calc_current_page(p_total_pages = calc_pages())
     #if offset == 0, then it has to be pages 1
-    (self.offset.to_i == 0) ? 1 : (self.offset/self.limit).to_i + 1
+    (@offset.to_i == 0) ? 1 : (@offset/@limit).to_i + 1
   end
 
 

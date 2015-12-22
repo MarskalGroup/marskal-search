@@ -121,6 +121,10 @@ class MarskalSearch
 
     end
 
+    def self.format_alias_name(p_alias)
+        p_alias.to_s.remove_begin_end_char(COLUMN_WRAPPER_CHAR).unquote.gsub(' ', '_').downcase
+    end
+
 
 
 

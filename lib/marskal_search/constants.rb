@@ -1,12 +1,6 @@
 class MarskalSearch
 
-  ERRORS = {
-      no_table: 'Table Does Not Exist:: ',
-      unable_to_create_model: 'Unable to create a model for table:',
-      need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_model:[table_name, connection_name]' to create the model dynamically",
-      invalid_format_create_model: "create_model: must either be an array or string.  ex: create_model: 'my_table', create_model: ['my_table', 'db_connection'] db_connection will default to app default if not provided",
-      invalid_select_view_format: "Invalid select view format: Usage sv=<[xs|sm|md|lg|xl]><.add|.sub><(fields in parenrthesis separated by commas)>. Examples: sv=xs.add(last_name) sv=xl.sub(client_id,employee_id) sv=sm.add(last_name, first_name).sub(salary+commission)"
-  }
+  DEFAULT = :default
 
   TIMESTAMP_FIELDS = %w(created_at updated_at)
 
@@ -22,6 +16,7 @@ class MarskalSearch
   DATATABLES = :datatables
   JQGRID = :jqgrid
   MARSKAL_API = :marskal_api
+  EVERYTHING = :everything
 
   FORCE_REPARSE_OF_LAST_SELECT = "FORCE"
 
@@ -56,8 +51,9 @@ class MarskalSearch
                   :wrap_column,
                   :model,
                   :create_model,
-                  :select_string,
+                  :select_string, :s,
                   :select_view, :sv,
+                  :output_settings, :format,
 
 
                  :not_distinct,
@@ -67,7 +63,7 @@ class MarskalSearch
                  :search_only_these_fields, :do_not_search_these_fields,
                  :ignore_default_search_field_exclusions,  :case_sensitive,
                  :order_string,
-                 :offset, :limit, :page,
+                 :offset, :limit, :requested_page,
                  :pass_back
   eos
 
@@ -75,6 +71,44 @@ class MarskalSearch
   #                :set_wrap_column
   # eos
 
+
+
+
+  #prefined formats to simply usage
+  PREDEFINED_FORMATS = {
+      everything:  {                  #show everything
+                                      data:             true,
+                                      count_unflitered: true,
+                                      count:            true,
+                                      page_vars:        true,
+                                      column_details:   true,
+                                      column_names:     true,
+                                      column_headings:  true
+      },
+      only_data:  {                   #show only the data (in the current defined :data_format)
+                                      data:             true,
+                                      count_unflitered: false,
+                                      count:            false,
+                                      page_vars:        false,
+                                      column_details:   false,
+                                      column_names:     false,
+                                      column_headings:  false
+      },
+      no_data:  {                     #show all except the data
+                                      data:             false,
+      },
+      array_with_heads_and_vars:  {  #show data in an array, plus column heads and page vars
+                                      data:             true,
+                                      count_unflitered: false,
+                                      count:            true,
+                                      page_vars:        true,
+                                      column_details:   false,
+                                      column_names:     true,
+                                      column_headings:  true,
+                                      data_format:      :array
+      }
+  }
+  VALID_FORMATS = PREDEFINED_FORMATS.keys + [DEFAULT, :marskal_api]
 
   #format is value for default to use position in list of keys
   # example
@@ -89,7 +123,34 @@ class MarskalSearch
       model:        { default: nil },
       create_model: { default: nil },
       select_string:  { default: '', shortcut: :s },
-      select_view:  { default: 0, valid: [:xs, :sm, :md, :lg, :xl ], shortcut: :sv }
+      select_view:  { default: 0, valid: [:xs, :sm, :md, :lg, :xl ], shortcut: :sv },
+      format:         { default: 0, valid: VALID_FORMATS},
+      output_settings: { default: {} } #defaults and valid keys are handled in a different way
+  }
+
+
+  VALID_OUTPUT_SETTINGS = {
+      data:             { default: true, valid: [true, false]},  #output only rows, this overrides all other settings
+      data_format:      { default: :active_record, valid: [:active_record, :hash, :array] },  #format of data rows rows format
+      page_vars:        { default: true, valid: [true, false]},    #offset, limit and page, total_pages
+      count:            { default: true, valid: [true, false]},    #count of filtered data (rows)
+      count_unfiltered: { default: false, valid: [true, false]},   #Potential time consumer, so default to false
+      column_details:   { default: true, valid: [true, false]},    #detailed infor about data heads, etc
+      column_names:     { default: false, valid: [true, false]},    #names of columns
+      column_headings:  { default: false, valid: [true, false]},    #headings of columns
+      datetime_format:  { default: "%Y-%m-%d %H:%i"},               #default_datetime_format
+  }
+
+
+
+  ERRORS = {
+      invalid_limit: "Limit must be between: #{1} and #{MAX_LIMIT_WITHOUT_OVERRIDE}: Use: limit_override: or lo: to override the maximum value of  #{MAX_LIMIT_WITHOUT_OVERRIDE}",
+      invalid_output_setting: 'Invalid output setting:: ',
+      no_table: 'Table Does Not Exist:: ',
+      unable_to_create_model: 'Unable to create a model for table:',
+      need_model: "Model Not Found: Provide an existing model using option 'model:' or use option 'create_model:[table_name, connection_name]' to create the model dynamically",
+      invalid_format_create_model: "create_model: must either be an array or string.  ex: create_model: 'my_table', create_model: ['my_table', 'db_connection'] db_connection will default to app default if not provided",
+      invalid_select_view_format: "Invalid select view format: Usage sv=<[xs|sm|md|lg|xl]><.add|.sub><(fields in parenrthesis separated by commas)>. Examples: sv=xs.add(last_name) sv=xl.sub(client_id,employee_id) sv=sm.add(last_name, first_name).sub(salary+commission)"
   }
 
 

@@ -24,7 +24,28 @@ class MarskalSearch
 
   end
 
+  def set_limit(p_val, p_override_max = false)
+    p_val ||= MAX_LIMIT_WITHOUT_OVERRIDE
+    if p_val.to_i < 1 || (p_val > MAX_LIMIT_WITHOUT_OVERRIDE && !p_override_max)
+      raise ERRORS[:invalid_limit]
+    end
+    @limit = p_val
+    set_page(@requested_page) unless @requested_page.nil?  #if we had a page variable, then lets recalculate based on limit change
+    self
+  end
 
+  def set_offset(p_val)                     #set offset for sql query 1st record found would an offset of 0
+    @offset = p_val.to_i < 0 ? 0 : p_val    #make sure value is at least 0
+    @requested_page = nil                   #we will assume that the offset was set directly and not via a page calulation
+    self
+  end
+
+  def set_page(p_page)                      #user will request to calculate @offset based on  page and a limit values
+    p_page = 1 if p_page < 0                #minimum pages is 1
+    set_offset((p_page * @limit) - @limit)  #calculate where the record offset would be bases on page and limits
+    @requested_page = p_page                 #now lets store this for relcaulation as needed
+    self
+  end
 
   #options[:select_string] or options[:s]
   def set_select_string(p_select_clause)
@@ -88,7 +109,45 @@ class MarskalSearch
     self
   end
 
- private
+
+  #set one of the available predefined format listed in PREDEFINED_FORMATS
+  #this will change @output_settings accordingly
+  # p_format whould be one of the formats listed in PREDEFINED_FORMATS
+  # ex: set_format(:marskal_api)
+  def set_format(p_format)
+    options_validator(:format, p_format)    #validate the format: setting
+
+    @output_settings = {}                   #init variable
+    l_defaults = [DEFAULT, MARSKAL_API]     #store default names in array
+    VALID_OUTPUT_SETTINGS.each {|k,v| @output_settings[k]=v[:default]}  #lets reset to default first before we apply specific formats
+
+    unless l_defaults.include?(p_format.to_sym)                       #dont do anything if we are simply resetting the defaults
+      @output_settings.merge!(PREDEFINED_FORMATS[p_format.to_sym])    #otherwise merge the new options with the old one
+    end
+
+    self      #return marskal object (self) so this can be daisy-chained with other calls
+  end
+
+  #set one or more of the various output settings as defined by VALID_OUTPUT_SETTINGS
+  # p_settings ==> one or more settings with values allowed by VALID_OUTPUT_SETTINGS
+  # ex: set_output_settings(column_details : false, column_headings: true, column_names: true)
+  def set_output_settings(p_settings)
+    p_settings.assert_valid_keys(VALID_OUTPUT_SETTINGS.keys)      #make sure we have a valid setting
+    p_settings.each do |k,l_value|                                #loop thru all the provided settings
+      if l_value == DEFAULT                                       #if the value is set to default
+        l_value = VALID_OUTPUT_SETTINGS[k][DEFAULT]               #then lets grab the default value
+      else                                                        #else
+        unless VALID_OUTPUT_SETTINGS[k][:valid].include?(l_value) #validate and generate error if needed
+          raise "#{ERRORS[:invalid_output_setting]} for setting #{k}. Valid Options are #{VALID_OUTPUT_SETTINGS[k][:valid]}"
+        end
+      end
+      @output_settings[k]= l_value    #everything good if we got here, so lets apply the setting
+    end
+    self  #return marskal object (self) so this can be daisy-chained with other calls
+  end
+
+
+  private
   #TODO: set private :method for each private method
 
    #used VALID_KEYS along with the field (key) to reset the value as allowed

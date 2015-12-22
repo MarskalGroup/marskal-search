@@ -1,6 +1,16 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.9 [`2015-12-22 by MAU`]
+* Added :output_settings and :format keys
+* Modified how alias, column names, and expressions are handled
+* patched to_json, as_json problems with 'type' field
+* Added new page var setters
+    * set_limit
+    * set_offset
+    * set_page
+
+---
 ###### v0.3.8 [`2015-12-17 by MAU`]
 * SavePoint: Got options[:sv] working, but need to test and document
 
