@@ -54,6 +54,7 @@ class MarskalSearch
                   :select_string, :s,
                   :select_view, :sv,
                   :output_settings, :format,
+                  :page,
 
 
                  :not_distinct,

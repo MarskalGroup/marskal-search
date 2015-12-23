@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.10 [`2015-12-22 by MAU`]
+* Small Tweaks to fix interim bugs caused by wip
+
+---
 ###### v0.3.9 [`2015-12-22 by MAU`]
 * Added :output_settings and :format keys
 * Modified how alias, column names, and expressions are handled

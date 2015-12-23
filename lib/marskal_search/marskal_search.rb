@@ -111,6 +111,7 @@ class MarskalSearch
 
   #intialize class
   def initialize(options = {})
+    options = options.deep_symbolize_keys
     eval "options.assert_valid_keys(#{VARIABLES})"          #only allow legit options
 
     @model_id = self.object_id
