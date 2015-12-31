@@ -17,6 +17,7 @@
 * more complete handling of date and time formatting functions (and length)
 * change the way default is handled in valid keys, use actual value not array designation
 * require marskal core
+* add rake function write out a marskal search object
 
 ---
 Back to [README.md](../README.md)

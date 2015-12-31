@@ -1,6 +1,10 @@
 ### Change log `(Revision History)`
 ---
 
+###### v0.3.11 [`2015-12-31 by MAU`]
+* Small Tweaks to accommodate changes in the Marskal APi
+
+---
 ###### v0.3.10 [`2015-12-22 by MAU`]
 * Small Tweaks to fix interim bugs caused by wip
 

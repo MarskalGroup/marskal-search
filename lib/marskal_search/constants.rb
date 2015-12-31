@@ -128,6 +128,7 @@ class MarskalSearch
       format:         { default: 0, valid: VALID_FORMATS},
       output_settings: { default: {} } #defaults and valid keys are handled in a different way
   }
+  ALL_VALID_KEYS = (MarskalSearch::VALID_KEYS.map {|k,v| k} + MarskalSearch::VALID_KEYS.map {|k,v| v[:shortcut]}).reject {|k| k.blank? }
 
 
   VALID_OUTPUT_SETTINGS = {
